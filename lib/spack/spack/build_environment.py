@@ -76,7 +76,6 @@ import spack.platforms
 import spack.repo
 import spack.schema.environment
 import spack.spec
-import spack.version
 import spack.stage
 import spack.store
 import spack.subprocess_context
@@ -466,19 +465,6 @@ def set_wrapper_environment_variables_for_flags(pkg, env):
     return env
 
 
-_LLVM_AMDGPU_TO_LLVM_VERSION = (
-    (spack.version.VersionList("7.13.0:10.1.0"), "23.0.0"),
-)
-
-
-def _llvm_amdgpu_upstream_version(rocm_version: spack.version.Version) -> str:
-    """Return the upstream LLVM version associated with a known ROCm release."""
-    for rocm_range, llvm_version in _LLVM_AMDGPU_TO_LLVM_VERSION:
-        if rocm_version.satisfies(rocm_range):
-            return llvm_version
-    return ""
-
-
 def optimization_flags(compiler, target):
     # Try to check if the current compiler comes with a version number or
     # has an unexpected suffix. If so, treat it as a compiler with a
@@ -486,16 +472,8 @@ def optimization_flags(compiler, target):
     version_number, _ = spack.vendor.archspec.cpu.version_components(
         compiler.version.dotted_numeric_string
     )
-    compiler_name = compiler.name
-    if compiler_name == "llvm-amdgpu":
-        upstream_version = _llvm_amdgpu_upstream_version(compiler.version)
-        if not upstream_version:
-            return ""
-        version_number = upstream_version
-        compiler_name = "clang"
-
     try:
-        result = target.optimization_flags(compiler_name, version_number)
+        result = target.optimization_flags(compiler.name, version_number)
     except (ValueError, spack.vendor.archspec.cpu.UnsupportedMicroarchitecture):
         result = ""
 
